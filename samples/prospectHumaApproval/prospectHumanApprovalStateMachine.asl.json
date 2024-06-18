@@ -1,0 +1,106 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "Prepare Data",
+    "States": {
+      "Prepare Data": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "Parameters": {
+          "Payload.$": "$",
+          "FunctionName": "arn:aws:lambda:us-west-2:12344555:function:apiGateWayTester:$LATEST"
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException"
+            ],
+            "IntervalSeconds": 2,
+            "MaxAttempts": 6,
+            "BackoffRate": 2
+          }
+        ],
+        "Next": "Validate Information",
+        "ResultSelector": {
+          "validated.$": "$.Payload.validated"
+        },
+        "ResultPath": "$.Payload"
+      },
+      "Validate Information": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Variable": "$.Payload.validated",
+            "BooleanEquals": true,
+            "Next": "Send SNS for Manual Approval"
+          }
+        ],
+        "Default": "Fail"
+      },
+      "Send SNS for Manual Approval": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+        "Parameters": {
+          "FunctionName": "arn:aws:lambda:us-west-2:1234455:function:sendMessageSNSTester:$LATEST",
+          "Payload": {
+            "TaskToken.$": "$$.Task.Token",
+            "name.$": "$.name",
+            "email.$": "$.email",
+            "employer.$": "$.employer",
+            "preapp.$": "$.preapp"
+          }
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException"
+            ],
+            "IntervalSeconds": 2,
+            "MaxAttempts": 6,
+            "BackoffRate": 2
+          }
+        ],
+        "Next": "Save Prospect to DB",
+        "ResultPath": null
+      },
+      "Save Prospect to DB": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::dynamodb:putItem",
+        "Parameters": {
+          "TableName": "prospectsTest",
+          "Item": {
+            "id": {
+              "S.$": "$.name"
+            },
+            "name": {
+              "S.$": "$.name"
+            },
+            "email": {
+              "S.$": "$.email"
+            },
+            "address": {
+              "S.$": "$.address"
+            },
+            "preapp": {
+              "S.$": "$.preapp"
+            },
+            "employer": {
+              "S.$": "$.employer"
+            }
+          }
+        },
+        "Next": "Success"
+      },
+      "Success": {
+        "Type": "Succeed"
+      },
+      "Fail": {
+        "Type": "Fail",
+        "Error": "NoValid input",
+        "Cause": "Error caused by invalid input"
+      }
+    }
+  }

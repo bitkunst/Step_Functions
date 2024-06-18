@@ -1,0 +1,14 @@
+{
+    "name": "Pass",
+    "output": {
+      "lambdaResult": {
+        "ExecutedVersion": "34",
+        "Payload": {
+          "statusCode": 200,
+          "body": "Quote: Step Functions and Lambdas - even better!!"
+        }
+      }
+    }
+  }
+
+  

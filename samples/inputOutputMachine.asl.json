@@ -1,0 +1,25 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "input",
+    "TimeoutSeconds": 12,
+    "Version": "1.0",
+    "States": {
+      "input": {
+        "Type": "Pass",
+        "Parameters": {
+          "About": "Pulling data that I want",
+          "Info": {
+            "status.$": "$.output.lambdaResult.Payload.statusCode",
+            "body.$": "$.output.lambdaResult.Payload.body"
+          }
+        },
+        "Next": "Wait"
+      },
+      "Wait": {
+        "Type": "Wait",
+        "InputPath": "$.Info.status",
+        "Seconds": 2,
+        "End": true
+      }
+    }
+  }

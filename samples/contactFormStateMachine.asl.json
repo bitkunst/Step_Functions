@@ -1,0 +1,98 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "Process Contact Form",
+    "States": {
+      "Process Contact Form": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "Parameters": {
+          "Payload.$": "$",
+          "FunctionName": "arn:aws:lambda:us-west-2:34444534:function:contactFormFun:$LATEST"
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException"
+            ],
+            "IntervalSeconds": 2,
+            "MaxAttempts": 6,
+            "BackoffRate": 2
+          }
+        ],
+        "Next": "Choice",
+        "ResultSelector": {
+          "validated.$": "$.Payload.validated"
+        },
+        "ResultPath": "$.Payload"
+      },
+      "Choice": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Variable": "$.Payload.validated",
+            "BooleanEquals": true,
+            "Next": "Add User to Database"
+          }
+        ],
+        "Default": "SNS Send Email to Admin"
+      },
+      "Add User to Database": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::dynamodb:putItem",
+        "Parameters": {
+          "TableName": "myContactTable",
+          "Item": {
+            "id": {
+              "S.$": "$.name"
+            },
+            "name": {
+              "S.$": "$.name"
+            },
+            "email": {
+              "S.$": "$.email"
+            },
+            "message": {
+              "S.$": "$.message"
+            }
+          }
+        },
+        "Next": "SNS Send Email to Admin Success",
+        "ResultPath": "$.taskResult"
+      },
+      "SNS Send Email to Admin Success": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "TopicArn": "arn:aws:sns:us-west-2:5454545:contactForm",
+          "Message": {
+            "name.$": "$.name",
+            "email.$": "$.email",
+            "message.$": "$.message",
+            "MessageCreated": "true"
+          }
+        },
+        "End": true,
+        "InputPath": "$",
+        "ResultPath": "$.resultTask"
+      },
+      "SNS Send Email to Admin": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "TopicArn": "arn:aws:sns:us-west-2:5545455:contactForm",
+          "Message": {
+            "name.$": "$.name",
+            "MessageCreated": "false"
+          }
+        },
+        "Next": "Fail- Issues Happened"
+      },
+      "Fail- Issues Happened": {
+        "Type": "Fail",
+        "Error": "ValidationError",
+        "Cause": "caused by event string"
+      }
+    }
+  }

@@ -1,0 +1,44 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "waitABit",
+    "States": {
+      "waitABit": {
+        "Type": "Wait",
+        "Seconds": 5,
+        "Next": "Lambda Invoke"
+      },
+      "Lambda Invoke": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "OutputPath": "$.Payload",
+        "Parameters": {
+          "Payload.$": "$",
+          "FunctionName": "arn:aws:lambda:us-west-2:123456:function:showRandomQuote:$LATEST"
+        },
+    
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException"
+            ],
+            "IntervalSeconds": 2,
+            "MaxAttempts": 6,
+            "BackoffRate": 2
+          }
+        ],
+        "Next": "Pass"
+      },
+      "Pass": {
+        "Type": "Pass",
+        "Next": "Wait"
+      },
+      "Wait": {
+        "Type": "Wait",
+        "Seconds": 5,
+        "End": true
+      }
+      
+    }
+  }

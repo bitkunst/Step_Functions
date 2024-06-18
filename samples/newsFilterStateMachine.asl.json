@@ -1,0 +1,49 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "FilterNews",
+    "States": {
+      "FilterNews": {
+        "Type": "Task",
+        "Parameters": {
+          "LanguageCode.$": "$.LanguageCode",
+          "Text.$": "$.Text"
+        },
+        "Resource": "arn:aws:states:::aws-sdk:comprehend:detectSentiment",
+        "Next": "Choice",
+        "ResultSelector": {
+          "Sentiment.$": "$.Sentiment"
+        }
+      },
+      "Choice": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Variable": "$.Sentiment",
+            "StringMatches": "POSITIVE",
+            "Next": "Read the News"
+          },
+          {
+            "Variable": "$.Sentiment",
+            "StringMatches": "NEGATIVE",
+            "Next": "Don't Read the News"
+          }
+        ],
+        "Default": "Indifferent"
+      },
+      "Read the News": {
+        "Type": "Pass",
+        "Next": "Success"
+      },
+      "Success": {
+        "Type": "Succeed"
+      },
+      "Indifferent": {
+        "Type": "Pass",
+        "End": true
+      },
+      "Don't Read the News": {
+        "Type": "Pass",
+        "End": true
+      }
+    }
+  }

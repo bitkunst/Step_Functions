@@ -1,0 +1,42 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "Map",
+    "States": {
+      "Map": {
+        "Type": "Map",
+        "Iterator": {
+          "StartAt": "Lambda Invoke",
+          "States": {
+            "Lambda Invoke": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "Payload.$": "$",
+                "FunctionName": "arn:aws:lambda:us-west-2:459374754:function:assignRandomSeat:$LATEST"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 6,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        "Next": "SeeResult"
+      },
+      "SeeResult": {
+        "Type": "Pass",
+        "End": true,
+        "InputPath": "$"
+      }
+    }
+  }
